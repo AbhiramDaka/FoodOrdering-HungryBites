@@ -1,0 +1,64 @@
+<style>
+  .restaurant-card {
+    margin-bottom: 20px;
+  }
+</style>
+
+<div class="alert alert-primary" role="alert" *ngIf="!isLoggedIn">
+  <i class="bi bi-info-circle-fill mr-2"></i> Please login to view available restaurants.
+</div>
+
+<div class="col">
+  <h2 class="mb-4">
+    <i class="bi bi-house-fill"></i>  Discover Amazing Restaurants
+  </h2>
+<hr>
+    <div *ngIf="role === 'customer' && isLoggedIn">
+    <div class="row">
+
+      <div class="col-md-6" *ngFor="let restaurant of restaurants; let i = index">
+        <div class="card mb-4 restaurant-card">
+          <img [src]="'https://source.unsplash.com/random/1920x1080/?Delicious,Tasty,Veg,Chinesevegfood,' + restaurant._id" class="card-img-top" [alt]="'Restaurant ' + restaurant._id">
+
+          <div class="card-body">
+            <h3 class="card-title">{{ restaurant.name }}</h3>
+            <!-- <p class="card-text">Owner: {{ restaurant.owner }}</p> -->
+            <button class="btn btn-primary" (click)="viewMenu(restaurant.name)">
+              <i class="bi bi-eye-fill"></i> View Menu
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<div class="col-md-12 mt-5">
+  <div class="row">
+    <div class="col-md-6" *ngIf="role === 'seller' && isLoggedIn">
+      <div class="card mb-4 restaurant-card">
+        <div class="card-body">
+          <h3 class="card-title">Add Restaurant</h3>
+          <p class="card-text">Click the button below to add a new restaurant.</p>
+          <button class="btn btn-primary" routerLink="/add-restaurants">
+            <i class="bi bi-plus-circle-fill"></i> Add Restaurant
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6" *ngIf="role === 'seller' && isLoggedIn">
+      <div class="card mb-4 restaurant-card">
+        <div class="card-body">
+          <h3 class="card-title">Add Menu Items</h3>
+          <p class="card-text">Click the button below to add menu items for your restaurant.</p>
+          <button class="btn btn-primary" routerLink="/menuitem">
+            <i class="bi bi-card-list"></i> Add Menu Items
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

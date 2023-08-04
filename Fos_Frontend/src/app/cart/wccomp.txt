@@ -1,0 +1,55 @@
+// cart.component.ts
+import { Component, OnInit } from '@angular/core';
+import { CartItem } from '../Cart';
+import { AuthService } from '../auth.service';
+
+
+
+@Component({
+  selector: 'app-cart',
+  templateUrl: './cart.component.html',
+  styleUrls: ['./cart.component.css']
+})
+export class CartComponent implements OnInit {
+  cartItems: CartItem[];
+  areCartItemsAvailable: boolean;
+
+  constructor(private authService: AuthService) { }
+
+  ngOnInit() {
+    this.getCartItems();
+  }
+
+  getCartItems() {
+    this.authService.getCartItems().subscribe(
+      (response: any) => {
+        this.cartItems = response.cart.items; // Access the items property of the cart object
+        console.log(this.cartItems);
+        this.areCartItemsAvailable = this.cartItems.length > 0;
+        console.log('Are cart items available?', this.areCartItemsAvailable);
+      },
+      (error) => {
+        console.error('An error occurred:', error);
+      }
+    );
+  }
+
+
+}
+
+
+
+
+<!-- cart.component.html -->
+<div *ngIf="areCartItemsAvailable; else noItemsMessage">
+  <h2>Cart Items</h2>
+  <ul>
+    <li *ngFor="let cartItem of cartItems">
+      {{ cartItem.menuItem.name }} - {{ cartItem.menuItem.price }} - Quantity: {{ cartItem.quantity }}
+    </li>
+  </ul>
+</div>
+
+<ng-template #noItemsMessage>
+  <p>No items in the cart.</p>
+</ng-template>

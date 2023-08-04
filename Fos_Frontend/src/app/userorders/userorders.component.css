@@ -1,0 +1,45 @@
+/* Style for the h1 heading */
+h1 {
+    font-size: 28px;
+    font-weight: bold;
+    color: #333;
+    margin-top: 20px;
+  }
+  
+  /* Style for the table */
+  .table-responsive {
+    overflow-x: auto;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  th, td {
+    padding: 10px;
+    text-align: left;
+  }
+  
+  /* Style for the table header */
+  thead {
+    background-color: #f2f2f2;
+  }
+  
+  th {
+    font-weight: bold;
+  }
+  
+  /* Style for alternating row colors */
+  tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  
+  /* Style for the "Oops! No orders yet..." message */
+  div {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 18px;
+    color: #888;
+  }
+  

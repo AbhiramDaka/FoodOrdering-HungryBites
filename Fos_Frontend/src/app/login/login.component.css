@@ -1,0 +1,73 @@
+/* login.component.css */
+.container {
+  margin-top: 30px;
+}
+
+.login-container {
+  background-color: #fff;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.stylish-heading {
+  font-size: 30px;
+  font-weight: bold;
+  color: #333;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+.btn-primary {
+  padding: 10px 20px;
+  font-size: 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  color: #fff;
+  background-color: #4CAF50;
+  border: none;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary:hover {
+  background-color: #45a049; /* Custom hover color - slightly darker green */
+  opacity: 0.8; /* Adjust the opacity for a subtle effect */
+}
+
+.img-fluid {
+  width: 100%;
+  height: auto;
+  max-width: 400px;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .login-container {
+    padding: 15px;
+  }
+  
+  .stylish-heading {
+    font-size: 24px;
+  }
+}

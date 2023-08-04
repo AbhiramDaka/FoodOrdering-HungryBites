@@ -1,0 +1,739 @@
+import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { ActivatedRoute, Router } from '@angular/router';
+
+export interface Cart {
+  _id: string;
+  user: string;
+  items: CartItem[];
+}
+
+export interface CartItem {
+  menuItem: {
+    name: string;
+    price: number;
+  };
+  quantity: number;
+}
+
+
+export interface Order {
+  _id: string;
+  user: string;
+  cart: string;
+  status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered';
+  createdAt: Date;
+  paymentMethod: 'online' | 'cash-on-delivery';
+  address: string;
+  phone: string;
+}
+
+@Component({
+  selector: 'app-cart',
+  templateUrl: './cart.component.html',
+  styleUrls: ['./cart.component.css'],
+})
+export class CartComponent implements OnInit {
+  cart: Cart | null = null; // Update the type to Cart | null
+  userId!: string;
+  orderId!: string;
+  order: Order[] = [];
+  address: string;
+  phone: string;
+  selectedPaymentMethod: 'online' | 'cash-on-delivery' = 'online';
+
+
+  private _isLoggedIn: boolean = false; // private backing field for isLoggedIn
+
+  constructor(
+    private http: HttpClient,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {
+    const token = localStorage.getItem('token');
+    if (token) {
+      this._isLoggedIn = true;
+    }
+  }
+
+  ngOnInit(): void {
+    this.route.params.subscribe((params) => {
+      this.userId = params['userId'];
+    });
+    this.getCartItems();
+  }
+
+  calculateTotalPrice(): number {
+    let totalPrice = 0;
+
+    if (this.cart) {
+      for (let item of this.cart.items) {
+        totalPrice += item.menuItem.price * item.quantity;
+      }
+    }
+
+    return totalPrice;
+  }
+
+
+  getTotalItems(): number {
+    let totalItems = 0;
+
+    if (this.cart) {
+      for (let item of this.cart.items) {
+        totalItems += item.quantity;
+      }
+    }
+
+    return totalItems;
+  }
+
+  decreaseQuantity(item: CartItem): void {
+    if (item.quantity > 1) {
+      item.quantity--;
+    }
+  }
+
+  increaseQuantity(item: CartItem): void {
+    item.quantity++;
+  }
+
+  removeFromCart(item: CartItem): void {
+    if (this.cart) {
+      const index = this.cart.items.indexOf(item);
+      if (index !== -1) {
+        this.cart.items.splice(index, 1);
+      }
+    }
+  }
+
+  getCartItems(): void {
+    const userId = this.userId; // Replace with the actual user ID
+
+    // Check if the cart data exists in local storage for the current user
+    const cartData = localStorage.getItem(`cart_${userId}`);
+
+    if (cartData) {
+      // If cart data exists, parse and assign it to the component's property
+      try {
+        this.cart = JSON.parse(cartData);
+      } catch (error) {
+        console.error('Error parsing cart data:', error);
+        this.cart = null; // Set the cart property to null if parsing fails
+      }
+    } else {
+      // If cart data doesn't exist, set the cart property to null
+      this.cart = null;
+    }
+
+    // Only make the API call if the cart data is empty
+    if (!this.cart) {
+      this.http.get<any>(`http://localhost:3000/cart/${userId}`).subscribe(
+        (response) => {
+          this.cart = response.cart;
+
+          // Store the updated cart data in local storage for the current user
+          localStorage.setItem(`cart_${userId}`, JSON.stringify(this.cart));
+        },
+        (error) => {
+          console.error('Error retrieving cart items:', error);
+        }
+      );
+    }
+  }
+
+  placeOrder() {
+    const orderData = {
+      user: this.userId,
+      cart: this.cart,
+      status: 'Pending',
+      createdAt: new Date(),
+      paymentMethod: this.selectedPaymentMethod, // Update the payment method
+      address: this.address,
+      phone: this.phone,
+    };
+    this.http.post<Order>('http://localhost:3000/orders', orderData).subscribe(
+      (response) => {
+        console.log('Order placed successfully');
+        alert('Order placed successfully');
+        // Clear the cart after the order is placed
+        this.clearCart();
+        console.log(this.userId);
+        console.log(response._id);
+        localStorage.setItem('orderId', response._id); // Store the orderId in local storage
+
+        this.orderId = response._id; // Set the orderId property to the generated order ID
+
+        this.router.navigate(['/orders', this.userId, this.orderId]);
+      },
+      (error) => {
+        console.error('Error placing order:', error);
+      }
+    );
+  }
+
+  clearCart(): void {
+    if (this.cart) {
+      // Clear the cart by setting the items array to an empty array
+      this.cart.items = [];
+      // Remove the cart data from local storage for the current user
+      localStorage.removeItem(`cart_${this.userId}`);
+    }
+  }
+
+  viewOrders() {
+    const orderId = localStorage.getItem('orderId');
+    if (orderId) {
+      this.router.navigate(['/orders', this.userId, orderId]);
+    } else {
+      console.error('Order ID is undefined');
+    }
+  }
+
+  viewAllOrders() {
+    this.http.get<Order[]>(`http://localhost:3000/orders/user/${this.userId}`).subscribe(
+      (orders) => {
+        this.order = orders;
+        this.router.navigate(['/orders', this.userId]);
+
+        // Process the retrieved orders
+        console.log('Retrieved orders:', orders);
+
+        // Handle the orders as needed, e.g., assign them to a property for display
+      },
+      (error) => {
+        console.error('Error retrieving orders:', error);
+      }
+    );
+  }
+
+  get isLoggedIn() {
+    return this._isLoggedIn; // return the private backing field
+  }
+}
+
+
+
+
+
+
+
+====================================================
+import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { ActivatedRoute, Router } from '@angular/router';
+
+export interface Cart {
+  _id: string;
+  user: string;
+  items: CartItem[];
+}
+
+export interface CartItem {
+  menuItem: {
+    name: string;
+    price: number;
+  };
+  quantity: number;
+}
+
+export interface Order {
+  _id: string;
+  user: string;
+  cart: string;
+  status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered';
+  createdAt: Date;
+  paymentMethod: 'online' | 'cash-on-delivery';
+  address: string;
+  phone: string;
+}
+
+@Component({
+  selector: 'app-cart',
+  templateUrl: './cart.component.html',
+  styleUrls: ['./cart.component.css'],
+})
+export class CartComponent implements OnInit {
+  cart: Cart | null = null; // Update the type to Cart | null
+  userId!: string;
+  orderId!: string;
+  order: Order[] = [];
+  address: string;
+  phone: string;
+  selectedPaymentMethod: 'online' | 'cash-on-delivery' = 'online';
+
+  private _isLoggedIn: boolean = false; // private backing field for isLoggedIn
+
+  constructor(
+    private http: HttpClient,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {
+    const token = localStorage.getItem('token');
+    if (token) {
+      this._isLoggedIn = true;
+    }
+  }
+
+  ngOnInit(): void {
+    this.route.params.subscribe((params) => {
+      this.userId = params['userId'];
+    });
+    this.getCartItems();
+  }
+
+  calculateTotalPrice(): number {
+    let totalPrice = 0;
+
+    if (this.cart) {
+      for (let item of this.cart.items) {
+        totalPrice += item.menuItem.price * item.quantity;
+      }
+    }
+
+    return totalPrice;
+  }
+
+  getTotalItems(): number {
+    let totalItems = 0;
+
+    if (this.cart) {
+      for (let item of this.cart.items) {
+        totalItems += item.quantity;
+      }
+    }
+
+    return totalItems;
+  }
+
+  decreaseQuantity(item: CartItem): void {
+    if (item.quantity > 1) {
+      item.quantity--;
+    }
+  }
+
+  increaseQuantity(item: CartItem): void {
+    item.quantity++;
+  }
+
+  removeFromCart(item: CartItem): void {
+    if (this.cart) {
+      const index = this.cart.items.indexOf(item);
+      if (index !== -1) {
+        this.cart.items.splice(index, 1);
+      }
+    }
+  }
+
+  getCartItems(): void {
+    const userId = this.userId; // Replace with the actual user ID
+
+    // Check if the cart data exists in local storage for the current user
+    const cartData = localStorage.getItem(`cart_${userId}`);
+
+    if (cartData) {
+      // If cart data exists, parse and assign it to the component's property
+      try {
+        this.cart = JSON.parse(cartData);
+      } catch (error) {
+        console.error('Error parsing cart data:', error);
+        this.cart = null; // Set the cart property to null if parsing fails
+      }
+    } else {
+      // If cart data doesn't exist, set the cart property to null
+      this.cart = null;
+    }
+
+    // Only make the API call if the cart data is empty
+    if (!this.cart) {
+      this.http.get<any>(`http://localhost:3000/cart/${userId}`).subscribe(
+        (response) => {
+          this.cart = response.cart;
+
+          // Store the updated cart data in local storage for the current user
+          localStorage.setItem(`cart_${userId}`, JSON.stringify(this.cart));
+        },
+        (error) => {
+          console.error('Error retrieving cart items:', error);
+        }
+      );
+    }
+  }
+
+  placeOrder() {
+    if (this.selectedPaymentMethod === 'online') {
+      this.router.navigate(['/payment'], {
+        state: { orderData: this.getOrderData() },
+      });
+    } else {
+      this.completeOrder();
+    }
+  }
+
+  completeOrder(): void {
+    const orderData = this.getOrderData();
+
+    this.http.post<Order>('http://localhost:3000/orders', orderData).subscribe(
+      (response) => {
+        console.log('Order placed successfully');
+        alert('Order placed successfully');
+        this.clearCart();
+        localStorage.setItem('orderId', response._id);
+        this.orderId = response._id;
+        this.router.navigate(['/orders', this.userId, this.orderId]);
+      },
+      (error) => {
+        console.error('Error placing order:', error);
+      }
+    );
+  }
+
+  clearCart(): void {
+    if (this.cart) {
+      this.cart.items = [];
+      localStorage.removeItem(`cart_${this.userId}`);
+    }
+  }
+
+  viewOrders() {
+    const orderId = localStorage.getItem('orderId');
+    if (orderId) {
+      this.router.navigate(['/orders', this.userId, orderId]);
+    } else {
+      console.error('Order ID is undefined');
+    }
+  }
+
+  viewAllOrders() {
+    this.http
+      .get<Order[]>(`http://localhost:3000/orders/user/${this.userId}`)
+      .subscribe(
+        (orders) => {
+          this.order = orders;
+          this.router.navigate(['/orders', this.userId]);
+          console.log('Retrieved orders:', orders);
+        },
+        (error) => {
+          console.error('Error retrieving orders:', error);
+        }
+      );
+  }
+
+  get isLoggedIn() {
+    return this._isLoggedIn; // return the private backing field
+  }
+
+  getOrderData(): Order {
+    return {
+      _id: '',
+      user: this.userId,
+      cart: '',
+      status: 'Pending',
+      createdAt: new Date(),
+      paymentMethod: this.selectedPaymentMethod,
+      address: this.address,
+      phone: this.phone,
+    };
+  }
+}
+
+
+
+
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+<div class="container" *ngIf="isLoggedIn">
+  <h1 class="mb-4">Your Cart Items</h1>
+  <div class="row">
+<div *ngIf="isLoggedIn">
+  <div class="col-lg-4 mb-3" *ngFor="let item of cartItems">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">{{ item.menuItem.name }}</h5>
+        <hr>
+        <p class="card-text">Price: {{ item.menuItem.price | currency:'INR':'symbol' }}</p>
+        <div class="quantity-control">
+          <button class="btn btn-sm btn-danger" (click)="decreaseQuantity(item)"><i class="bi bi-dash"></i></button>
+          <p class="card-text">Quantity: {{ item.quantity }}</p>
+          <button class="btn btn-sm btn-success" (click)="increaseQuantity(item)"><i class="bi bi-plus"></i></button>
+        </div>
+      </div>
+      <hr>
+      <button class="btn btn-danger" (click)="removeFromCart(item)"><i class="bi bi-trash"></i> Remove</button>
+    </div>
+  </div>
+</div>
+
+
+
+  </div>
+
+  <div class="mt-4">
+    <p>Total Items: {{ getTotalItems() }}</p>
+    <p>Total Price: {{ calculateTotalPrice() | currency:'INR':'symbol' }}</p>
+  </div>
+
+  <label for="address">Enter Delivery Address:</label>
+  <input type="text" id="address" [(ngModel)]="address" name="address" class="form-control">
+
+  <label for="phoneNumber">Phone Number:</label>
+  <input type="text" id="phone" [(ngModel)]="phone" name="phone" class="form-control">
+
+  <label for="paymentMethod">Payment Method:</label>
+  <select id="paymentMethod" [(ngModel)]="selectedPaymentMethod" name="paymentMethod" class="form-control">
+    <option value="online">Online Payment</option>
+    <option value="cash-on-delivery">Cash on Delivery</option>
+  </select>
+
+  <div class="mt-3">
+    <button class="btn btn-primary" (click)="placeOrder()"><i class="bi bi-check2"></i> Place Order</button>
+    <button class="btn btn-secondary" (click)="viewAllOrders()"><i class="bi bi-list"></i> View All Orders</button>
+  </div>
+</div>
+
+
+
+
+
+===========================================
+
+import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { ActivatedRoute, Router } from '@angular/router';
+
+export interface Cart {
+  _id: string;
+  user: string;
+  items: CartItem[];
+}
+
+export interface CartItem {
+  menuItem: {
+    name: string;
+    price: number;
+  };
+  quantity: number;
+}
+
+
+
+
+export interface Order {
+  _id: string;
+  user: string;
+  cart: string;
+  status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered';
+  createdAt: Date;
+  paymentMethod: 'online' | 'cash-on-delivery';
+  address: string;
+  phone: string;
+}
+
+@Component({
+  selector: 'app-cart',
+  templateUrl: './cart.component.html',
+  styleUrls: ['./cart.component.css'],
+})
+export class CartComponent implements OnInit {
+  cart: Cart | null = null;
+  cartItems: CartItem[];
+  areCartItemsAvailable: boolean = false;
+
+  userId!: string;
+  orderId!: string;
+  order: Order[] = [];
+  address: string;
+  phone: string;
+
+  selectedPaymentMethod: 'online' | 'cash-on-delivery' = 'online';
+
+  private _isLoggedIn: boolean = false;
+
+  constructor(
+    private http: HttpClient,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {
+    const token = localStorage.getItem('token');
+    if (token) {
+      this._isLoggedIn = true;
+    }
+  }
+
+  ngOnInit(): void {
+    this.route.params.subscribe((params) => {
+      this.userId = params['userId'];
+    });
+    this.getCartItems();
+  }
+
+  calculateTotalPrice(): number {
+    let totalPrice = 0;
+
+    if (this.cart) {
+      for (let item of this.cart.items) {
+        totalPrice += item.menuItem.price * item.quantity;
+      }
+    }
+
+    return totalPrice;
+  }
+
+  getTotalItems(): number {
+    let totalItems = 0;
+
+    if (this.cart) {
+      for (let item of this.cart.items) {
+        totalItems += item.quantity;
+      }
+    }
+
+    return totalItems;
+  }
+
+  decreaseQuantity(item: CartItem): void {
+    if (item.quantity > 1) {
+      item.quantity--;
+    }
+  }
+
+  increaseQuantity(item: CartItem): void {
+    item.quantity++;
+  }
+
+  removeFromCart(item: CartItem): void {
+    if (this.cart) {
+      const index = this.cart.items.indexOf(item);
+      if (index !== -1) {
+        this.cart.items.splice(index, 1);
+      }
+    }
+  }
+
+  getCartItems(): void {
+    const userId = this.userId;
+    const cartData = localStorage.getItem(`cart_${userId}`);
+
+    if (cartData) {
+      try {
+        this.cart = JSON.parse(cartData);
+        console.log(this.cart);
+        this.updateCartData(); // Update cartItems array
+      } catch (error) {
+        console.error('Error parsing cart data:', error);
+        this.cart = null;
+      }
+    } else {
+      this.cart = null;
+    }
+
+    if (!this.cart) {
+      this.http.get<Cart>(`http://localhost:3000/cart/${userId}`).subscribe(
+        (response) => {
+          this.cart = response;
+          console.log(this.cart);
+          if (Array.isArray(response)) {
+            this.cart.items = response.items;
+          } else {
+            this.cart.items = [];
+          }
+          localStorage.setItem(`cart_${userId}`, JSON.stringify(this.cart));
+          this.updateCartData(); // Update cartItems array
+        },
+        (error) => {
+          console.error('Error retrieving cart items:', error);
+        }
+      );
+    }
+  }
+
+  updateCartData(): void {
+    if (this.cart && Array.isArray(this.cart.items)) {
+      this.cartItems = [...this.cart.items];
+      this.areCartItemsAvailable = true;
+    } else {
+      this.cartItems = [];
+      this.areCartItemsAvailable = false;
+    }
+  }
+
+
+
+
+
+  placeOrder() {
+    if (this.selectedPaymentMethod === 'online') {
+      this.router.navigate(['/payment'], {
+        state: { orderData: this.getOrderData() },
+      });
+    } else {
+      this.completeOrder();
+    }
+  }
+
+  completeOrder(): void {
+    const orderData = this.getOrderData();
+
+    this.http.post<Order>('http://localhost:3000/orders', orderData).subscribe(
+      (response) => {
+        console.log('Order placed successfully');
+        alert('Order placed successfully');
+        this.clearCart();
+        localStorage.setItem('orderId', response._id);
+        this.orderId = response._id;
+        this.router.navigate(['/orders', this.userId, this.orderId]);
+      },
+      (error) => {
+        console.error('Error placing order:', error);
+      }
+    );
+  }
+
+  clearCart(): void {
+    if (this.cart) {
+      this.cart.items = [];
+      localStorage.removeItem(`cart_${this.userId}`);
+    }
+  }
+
+  viewOrders() {
+    const orderId = localStorage.getItem('orderId');
+    if (orderId) {
+      this.router.navigate(['/orders', this.userId, orderId]);
+    } else {
+      console.error('Order ID is undefined');
+    }
+  }
+
+  viewAllOrders() {
+    this.http
+      .get<Order[]>(`http://localhost:3000/orders/user/${this.userId}`)
+      .subscribe(
+        (orders) => {
+          this.order = orders;
+          this.router.navigate(['/orders', this.userId]);
+          console.log('Retrieved orders:', orders);
+        },
+        (error) => {
+          console.error('Error retrieving orders:', error);
+        }
+      );
+  }
+
+  get isLoggedIn() {
+    return this._isLoggedIn;
+  }
+
+  getOrderData(): Order {
+    return {
+      _id: '',
+      user: this.userId,
+      cart: '',
+      status: 'Pending',
+      createdAt: new Date(),
+      paymentMethod: this.selectedPaymentMethod,
+      address: this.address,
+      phone: this.phone,
+    };
+  }
+}

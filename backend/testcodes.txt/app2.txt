@@ -1,0 +1,307 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
+const cors = require('cors');
+
+
+
+const app = express();
+app.use(bodyParser.json());
+
+app.use(cors());
+
+
+// Connect to MongoDB
+mongoose.connect('mongodb://localhost:27017/foodordering', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+  .then(() => console.log('Connected to MongoDB'))
+  .catch((error) => console.error('MongoDB connection error:', error));
+
+// Define User schema
+const userSchema = new mongoose.Schema({
+  username: String,
+  password: String,
+  usertype: String
+});
+const User = mongoose.model('User', userSchema);
+
+// Define Restaurant schema
+const restaurantSchema = new mongoose.Schema({
+  name: String,
+  owner: String
+});
+const Restaurant = mongoose.model('Restaurant', restaurantSchema);
+
+// Define Menu Item schema
+const menuItemSchema = new mongoose.Schema({
+  name: String,
+  price: Number,
+  restaurant: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Restaurant'
+  }
+});
+const MenuItem = mongoose.model('MenuItem', menuItemSchema);
+
+// Define Cart Item schema
+const cartItemSchema = new mongoose.Schema({
+  item: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'MenuItem'
+  },
+  quantity: Number
+});
+const CartItem = mongoose.model('CartItem', cartItemSchema);
+
+// Define Order schema
+const orderSchema = new mongoose.Schema({
+  items: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'MenuItem'
+  }],
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  restaurant: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Restaurant'
+  },
+  totalPrice: Number,
+  orderDate: {
+    type: Date,
+    default: Date.now
+  }
+});
+const Order = mongoose.model('Order', orderSchema);
+
+// Registration endpoint
+app.post('/register', (req, res) => {
+  const { username, password, usertype } = req.body;
+
+  // Check if username already exists
+  User.findOne({ username: username })
+    .then((user) => {
+      if (user) {
+        res.status(409).json({ message: 'Username already exists' });
+      } else {
+ 
+        
+      // Hash the password
+bcrypt.hash(password, 10)
+.then((hash) => {
+  // Create a new user
+  const newUser = new User({
+    username: username,
+    password: hash,
+    usertype: usertype
+  });
+
+  // Save the user to the database
+  newUser.save()
+    .then(() => {
+      res.status(201).json({ message: 'Registration successful' });
+    })
+    .catch((error) => {
+      res.status(500).json({ message: 'Error during user registration', error: error });
+    });
+})
+.catch((error) => {
+  res.status(500).json({ message: 'Error during password hashing', error: error });
+});
+
+      }
+    })
+    .catch((error) => {
+      res.status(500).json({ message: 'Error during user lookup', error: error });
+    });
+});
+
+// Login endpoint
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+
+  // Find the user by username
+  User.findOne({ username: username })
+    .then((user) => {
+      if (!user) {
+        res.status(401).json({ message: 'Authentication failed' });
+      } else {
+        // Compare the provided password with the stored hashed password
+        bcrypt.compare(password, user.password, function (err, result) {
+          if (err) {
+            res.status(500).json({ message: 'Error during password comparison' });
+          } else {
+            if (result) {
+              // Generate a JWT token
+              const token = jwt.sign({ username: user.username, usertype: user.usertype }, 'secret-key', { expiresIn: '1h' });
+
+              res.status(200).json({ message: 'Authentication successful', token: token });
+            } else {
+              res.status(401).json({ message: 'Authentication failed' });
+            }
+          }
+        });
+      }
+    })
+    .catch((error) => {
+      res.status(500).json({ message: 'Error during user lookup', error: error });
+    });
+});
+
+// Add a new restaurant
+app.post('/restaurants', (req, res) => {
+  const { name, owner, menuItems } = req.body;
+
+  const newRestaurant = new Restaurant({
+    name: name,
+    owner: owner
+  });
+
+  newRestaurant.save()
+    .then((restaurant) => {
+      const menuItemPromises = menuItems.map(menuItem => {
+        const newMenuItem = new MenuItem({
+          name: menuItem.name,
+          price: menuItem.price,
+          restaurant: restaurant._id
+        });
+
+        return newMenuItem.save();
+      });
+
+      Promise.all(menuItemPromises)
+        .then(() => {
+          res.status(201).json({ message: 'Restaurant and menu items added successfully' });
+        })
+        .catch((error) => {
+          res.status(500).json({ message: 'Error adding menu items', error: error });
+        });
+    })
+    .catch((error) => {
+      res.status(500).json({ message: 'Error adding restaurant', error: error });
+    });
+});
+
+
+// Get all restaurants
+app.get('/restaurants', (req, res) => {
+  Restaurant.find()
+    .populate('menuItems') // Populate the 'menuItems' field to include menu items in the response
+    .then((restaurants) => {
+      res.status(200).json(restaurants);
+    })
+    .catch((error) => {
+      res.status(500).json({ message: 'Error retrieving restaurants', error: error });
+    });
+});
+
+
+// Add a new menu item to a restaurant
+app.post('/restaurants/:restaurantId/menu', (req, res) => {
+  const { restaurantId } = req.params;
+  const { name, price } = req.body;
+
+  const newMenuItem = new MenuItem({
+    name: name,
+    price: price,
+    restaurant: restaurantId
+  });
+
+  newMenuItem.save()
+    .then(() => {
+      res.status(201).json({ message: 'Menu item added successfully' });
+    })
+    .catch((error) => {
+      res.status(500).json({ message: 'Error adding menu item', error: error });
+    });
+});
+
+// Get all menu items for a restaurant
+app.get('/restaurants/:restaurantId/menu', (req, res) => {
+  const { restaurantId } = req.params;
+
+  MenuItem.find({ restaurant: restaurantId })
+    .then((menuItems) => {
+      res.status(200).json(menuItems);
+    })
+    .catch((error) => {
+      res.status(500).json({ message: 'Error retrieving menu items', error: error });
+    });
+});
+
+// Add an item to the cart
+app.post('/cart', (req, res) => {
+  const { itemId, quantity } = req.body;
+
+  const newCartItem = new CartItem({
+    item: itemId,
+    quantity: quantity
+  });
+
+  newCartItem.save()
+    .then(() => {
+      res.status(201).json({ message: 'Item added to cart successfully' });
+    })
+    .catch((error) => {
+     
+      res.status(500).json({ message: 'Error adding item to cart', error: error });
+    });
+});
+
+// Get all items in the cart
+app.get('/cart', (req, res) => {
+  CartItem.find()
+    .populate('item')
+    .then((cartItems) => {
+      res.status(200).json(cartItems);
+    })
+    .catch((error) => {
+      res.status(500).json({ message: 'Error retrieving cart items', error: error });
+    });
+});
+
+// Place an order
+app.post('/orders', (req, res) => {
+  const { items, userId, restaurantId, totalPrice } = req.body;
+
+  const newOrder = new Order({
+    items: items,
+    user: userId,
+    restaurant: restaurantId,
+    totalPrice: totalPrice
+  });
+
+  newOrder.save()
+    .then(() => {
+      res.status(201).json({ message: 'Order placed successfully' });
+    })
+    .catch((error) => {
+      res.status(500).json({ message: 'Error placing order', error: error });
+    });
+});
+
+// Get the purchase bill
+app.get('/orders/:orderId', (req, res) => {
+  const { orderId } = req.params;
+
+  Order.findById(orderId)
+    .populate('items')
+    .populate('user')
+    .populate('restaurant')
+    .then((order) => {
+      res.status(200).json(order);
+    })
+    .catch((error) => {
+      res.status(500).json({ message: 'Error retrieving order', error: error });
+    });
+});
+
+// Start the server
+app.listen(3000, () => {
+  console.log('Server is running on port 3000');
+});

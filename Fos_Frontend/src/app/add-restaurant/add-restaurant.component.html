@@ -1,0 +1,18 @@
+<div class="alert alert-primary" role="alert" *ngIf="!isLoggedIn">
+  <i class="fas fa-info-circle mr-2"></i> Please login to view available restaurants.
+</div>
+
+<div *ngIf="isLoggedIn">
+  <h2>Add Restaurant</h2>
+  <form (submit)="addRestaurant()">
+    <div class="form-group">
+      <label for="name">Name:</label>
+      <input type="text" id="name" [(ngModel)]="name" name="name" class="form-control" required>
+    </div>
+    <div class="form-group">
+      <label for="owner">Owner:</label>
+      <input type="text" id="owner" [(ngModel)]="owner" name="owner" class="form-control" required>
+    </div>
+    <button type="submit">Add Restaurant</button>
+  </form>
+</div>

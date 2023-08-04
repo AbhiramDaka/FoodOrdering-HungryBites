@@ -1,0 +1,65 @@
+/* Custom styles for the menu items */
+.container {
+  padding: 20px;
+}
+
+.card {
+  margin-bottom: 10px;
+}
+
+.card-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.card-text {
+  margin-bottom: 5px;
+}
+
+/* Custom styles for the buttons */
+.btn-primary {
+  margin-right: 10px;
+}
+
+.btn-secondary {
+  margin-right: 10px;
+}
+
+/* Custom styles for the cart items */
+.cart-item {
+  margin-bottom: 10px;
+}
+
+.cart-item p {
+  margin-bottom: 5px;
+}
+
+/* Margin and padding for the alert */
+.alert {
+  margin-bottom: 20px;
+  padding: 10px;
+}
+
+/* Margin and padding for the container */
+.container {
+  margin-top: 20px;
+  padding: 20px;
+}
+
+/* Margin and padding for the cart item card */
+.card {
+  margin-bottom: 20px;
+  padding: 10px;
+}
+
+/* Margin and padding for the input fields */
+input {
+  margin-bottom: 10px;
+  padding: 5px;
+}
+
+/* Margin and padding for the buttons */
+.btn {
+  margin-right: 10px;
+  padding: 8px 16px;
+}

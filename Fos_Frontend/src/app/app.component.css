@@ -1,0 +1,92 @@
+/* styles.css */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Navbar */
+.navbar {
+  background-color: #4CAF50;
+}
+
+.navbar-brand {
+  font-size: 24px;
+  color: #fff;
+}
+
+.navbar-toggler-icon {
+  background-color: #fff;
+}
+
+.nav-link {
+  color: #fff;
+  font-size: 18px;
+}
+
+.nav-link:hover {
+  color: #f9f9f9;
+}
+
+/* Container */
+.container {
+  margin-top: 80px;
+  padding: 20px;
+}
+
+/* Footer */
+.footer {
+  background-color: #333;
+}
+
+.footer p {
+  margin: 0;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.footer p::before {
+  content: "\00a9 ";
+}
+
+/* Buttons */
+.btn {
+  font-size: 16px;
+  margin-left: 5px;
+}
+
+.btn-secondary {
+  background-color: #fff;
+  color: #4CAF50;
+  border-color: #4CAF50;
+}
+
+.btn-secondary:hover {
+  background-color: #4CAF50;
+  color: #fff;
+}
+
+/* Media Queries for Responsiveness */
+@media (max-width: 576px) {
+  .navbar-brand {
+    font-size: 20px;
+  }
+  .nav-link {
+    font-size: 16px;
+  }
+  .btn {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  .navbar-brand {
+    font-size: 18px;
+  }
+  .nav-link {
+    font-size: 14px;
+  }
+  .btn {
+    font-size: 12px;
+  }
+}

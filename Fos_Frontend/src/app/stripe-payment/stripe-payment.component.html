@@ -1,0 +1,60 @@
+<h2>Stripe Payment</h2>
+
+<form [formGroup]="paymentForm" (ngSubmit)="onSubmit()">
+  <div class="form-group">
+    <label for="name">Name on Card</label>
+    <input type="text" class="form-control" id="name" formControlName="name">
+    <div *ngIf="paymentForm.controls['name'].touched && paymentForm.controls['name'].invalid" class="error">
+      Name is required.
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="cardNumber">Card Number</label>
+    <input type="text" class="form-control" id="cardNumber" formControlName="cardNumber">
+    <div *ngIf="paymentForm.controls['cardNumber'].touched && paymentForm.controls['cardNumber'].invalid" class="error">
+      Card number is required.
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group col-md-6">
+      <label for="expirationMonth">Expiration Month</label>
+      <input type="text" class="form-control" id="expirationMonth" formControlName="expirationMonth">
+      <div *ngIf="paymentForm.controls['expirationMonth'].touched && paymentForm.controls['expirationMonth'].invalid" class="error">
+        Expiration month is required.
+      </div>
+    </div>
+    <div class="form-group col-md-6">
+      <label for="expirationYear">Expiration Year</label>
+      <input type="text" class="form-control" id="expirationYear" formControlName="expirationYear">
+      <div *ngIf="paymentForm.controls['expirationYear'].touched && paymentForm.controls['expirationYear'].invalid" class="error">
+        Expiration year is required.
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="cvc">CVC</label>
+    <input type="text" class="form-control" id="cvc" formControlName="cvc">
+    <div *ngIf="paymentForm.controls['cvc'].touched && paymentForm.controls['cvc'].invalid" class="error">
+      CVC is required.
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="address">Enter Delivery Address:</label>
+    <input type="text" id="address" formControlName="address" class="form-control">
+  </div>
+  <label for="phone">Phone Number:</label>
+  <input type="text" id="phone" formControlName="phone" name="phone" class="form-control">
+
+
+  <label for="paymentMethod">Payment Method:</label>
+  <select id="paymentMethod" formControlName="selectedPaymentMethod" name="paymentMethod" class="form-control">
+    <option value="online">Online Payment</option>
+    <option value="cash-on-delivery">Cash on Delivery</option>
+  </select>
+
+  <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
+<div *ngIf="error" class="error">
+  {{ error }}
+</div>

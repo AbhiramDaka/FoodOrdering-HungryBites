@@ -1,0 +1,31 @@
+<div class="container d-flex align-items-center vh-100">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <img src="assets\i22.jpg" alt="Image" class="img-fluid">
+    </div>
+    <div class="col-md-6">
+      <div class="login-container p-4">
+        <h2 class="stylish-heading">Step into flavor-town! Log in to HungryBites now</h2>
+        <form (ngSubmit)="login()" class="mt-4">
+          <div class="form-group">
+            <label for="username"><i class="bi bi-person-fill"></i> Username</label>
+            <input type="text" id="username" name="username" [(ngModel)]="username" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="password"><i class="bi bi-lock-fill"></i> Password</label>
+            <input type="password" id="password" name="password" [(ngModel)]="password" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="role"><i class="bi bi-people-fill"></i> Role</label>
+            <select id="role" name="role" [(ngModel)]="role" class="form-control" required>
+              <option value="seller">Seller</option>
+              <option value="customer">Customer</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-box-arrow-in-right"></i> Login</button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>

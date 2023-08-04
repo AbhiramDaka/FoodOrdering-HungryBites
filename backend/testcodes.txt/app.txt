@@ -1,0 +1,658 @@
+const express = require('express');
+const session = require('express-session');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const cookieParser = require('cookie-parser');
+
+const app = express();
+const port = 3000;
+
+// Use necessary middleware
+app.use(cors());
+app.use(bodyParser.json());
+app.use(cookieParser());
+
+// Define database connection
+mongoose.connect('mongodb://localhost/foodorderingsystem', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+});
+const db = mongoose.connection;
+
+// Listen to database events
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function() {
+    console.log("Database Connected Successfully!!!");
+});
+
+// Define schemas
+const userSchema = new mongoose.Schema({
+    username: String,
+    password: String,
+    usertype: String,
+});
+
+
+const restaurantSchema = new mongoose.Schema({
+    restaurantName: {
+      type: String,
+      required: true
+    },
+    description: {
+      type: String,
+      required: true
+    },
+    location: {
+      type: String,
+      required: true
+    },
+    cuisine: {
+      type: String,
+      required: true
+    },
+    openingHours: {
+      type: String,
+      required: true
+    },
+    contactNumber: {
+      type: String,
+      required: true
+    },
+    address: {
+      type: String,
+      required: true
+    },
+    menu: [
+      {
+        itemId: {
+          type: String,
+          required: true,
+        },
+        itemName: {
+          type: String,
+          required: true
+        },
+        price: {
+          type: Number,
+          required: true
+        },
+        description: {
+          type: String,
+          required: true
+        },
+        ingredients: [
+          {
+            name: {
+              type: String,
+              required: true
+            },
+            quantity: {
+              type: Number,
+              required: true
+            }
+          }
+        ]
+      }
+    ],
+    website: String,
+    email: String,
+    rating: Number,
+    reviews: [
+      {
+        author: {
+          type: String,
+          required: true
+        },
+        body: {
+          type: String,
+          required: true
+        }
+      }
+    ],
+    orders: [
+      {
+        orderId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Order',
+          required: true
+        },
+        orderStatus: {
+          type: String,
+          required: true
+        },
+        cartItems: [
+          {
+            itemId: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: 'Restaurant.menu',
+              required: true
+            },
+            itemName: {
+              type: String,
+              required: true
+            },
+            price: {
+                type: Number,
+                required: true
+              },
+              
+            quantity: {
+              type: Number,
+              required: true
+            }
+          }
+        ]
+      }
+    ]
+  });
+  
+  
+
+const User = mongoose.model('User', userSchema);
+const Restaurant = mongoose.model('Restaurant', restaurantSchema);
+module.exports = Restaurant;
+
+
+// Define API routes
+app.post('/register', async (req, res) => {
+    const { username, password, usertype } = req.body;
+
+    try {
+        // Check if the username is already taken
+        const existingUser = await User.findOne({ username });
+        if (existingUser) {
+            return res.status(400).json({ error: 'Username already taken' });
+        }
+
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create a new user
+        const user = new User({
+            username,
+            password: hashedPassword,
+            usertype,
+        });
+
+        // Save the user to the database
+        await user.save();
+
+        res.json({ message: 'User registered successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+
+
+app.post('/login', async(req, res) => {
+    const { username, password, usertype } = req.body;
+    const user = await User.findOne({ username, usertype });
+
+    if (!user) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+        return res.status(401).json({ message: 'Invalid credentials password' });
+    }
+
+    const token = jwt.sign({ userId: user._id }, 'secret_key');
+    res.cookie('token', token, { httpOnly: true });
+    res.json({ user });
+});
+
+app.post('/logout', (req, res) => {
+    res.clearCookie('token');
+    res.json({ message: 'Logout successful' });
+});
+
+app.get('/users', async(req, res) => {
+    try {
+        const users = await User.find();
+        res.json(users);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Define API route for retrieving a restaurant by its ID
+app.get('/restaurants/:id', async (req, res) => {
+    const { id } = req.params;
+  
+    try {
+      const restaurant = await Restaurant.findById(id).populate('orders.orderId');
+  
+      if (!restaurant) {
+        return res.status(404).json({ error: 'Restaurant not found' });
+      }
+  
+      const formattedRestaurant = {
+        id: restaurant._id,
+        restaurantName: restaurant.restaurantName,
+        description: restaurant.description,
+        location: restaurant.location,
+        cuisine: restaurant.cuisine,
+        openingHours: restaurant.openingHours,
+        contactNumber: restaurant.contactNumber,
+        address: restaurant.address,
+        menu: restaurant.menu.map((menuItem) => ({
+          itemId: menuItem.itemId,
+          itemName: menuItem.itemName,
+          price: menuItem.price,
+          description: menuItem.description,
+          ingredients: menuItem.ingredients
+          // Add more properties related to menu items if needed
+        })),
+        orders: restaurant.orders.map((order) => ({
+          orderId: order.orderId._id,
+          orderStatus: order.orderStatus
+        }))
+      };
+  
+      res.json(formattedRestaurant);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+  
+
+app.get('/restaurants', async (req, res) => {
+    try {
+      const restaurants = await Restaurant.find().populate('orders.orderId');
+      const formattedRestaurants = restaurants.map((restaurant) => ({
+        id: restaurant._id,
+        restaurantName: restaurant.restaurantName,
+        description: restaurant.description,
+        location: restaurant.location,
+        cuisine: restaurant.cuisine,
+        openingHours: restaurant.openingHours,
+        contactNumber: restaurant.contactNumber,
+        address: restaurant.address,
+        menu: restaurant.menu.map((menuItem) => ({
+          itemName: menuItem.itemName,
+          price: menuItem.price,
+          description: menuItem.description,
+          ingredients: menuItem.ingredients
+          // Add more properties related to menu items if needed
+        })),
+        orders: restaurant.orders.map((order) => ({
+          orderId: order.orderId._id,
+          orderStatus: order.orderStatus
+        }))
+      }));
+  
+      res.json(formattedRestaurants);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+  
+
+  app.post('/restaurants', async (req, res) => {
+    const {
+      restaurantName,
+      description,
+      location,
+      cuisine,
+      openingHours,
+      contactNumber,
+      address,
+      menu,
+      website,
+      email,
+      rating,
+      reviews,
+      orders
+    } = req.body;
+  
+    try {
+      const restaurant = new Restaurant({
+        restaurantName,
+        description,
+        location,
+        cuisine,
+        openingHours,
+        contactNumber,
+        address,
+        menu,
+        website,
+        email,
+        rating,
+        reviews,
+        orders
+      });
+  
+      await restaurant.save();
+  
+      res.json({ message: 'Restaurant added successfully' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+  
+
+
+
+
+const orderSchema = new mongoose.Schema({
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    restaurantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Restaurant',
+      required: true
+    },
+    items: [
+      {
+        itemId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Restaurant.menu._id',
+          required: true
+        },
+        quantity: {
+          type: Number,
+          required: true
+        }
+      }
+    ],
+    totalAmount: {
+      type: Number,
+      required: true
+    },
+    isCOD: {
+      type: Boolean,
+      default: true
+    },
+    status: {
+      type: String,
+      default: 'Placed'
+    }
+  });
+  
+  const Order = mongoose.model('Order', orderSchema);
+  
+  
+  
+  app.post('/orders', async (req, res) => {
+    const { userId, restaurantId, items, totalAmount } = req.body;
+  
+    try {
+      const order = new Order({
+        userId,
+        restaurantId,
+        items,
+        totalAmount
+      });
+  
+      // Find the user and validate if the user exists
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+  
+      // Find the restaurant and validate if the restaurant exists
+      const restaurant = await Restaurant.findById(restaurantId);
+      if (!restaurant) {
+        return res.status(404).json({ error: 'Restaurant not found' });
+      }
+  
+      // Validate if all items exist in the restaurant's menu
+      for (const item of items) {
+        const menuItem = restaurant.menu.id(item.itemId);
+        if (!menuItem) {
+          return res.status(404).json({ error: 'Item not found in the restaurant menu' });
+        }
+      }
+  
+      // Add cart items to the order and the restaurant's orders
+      const cartItems = [];
+      for (const item of items) {
+        const menuItem = restaurant.menu.id(item.itemId);
+  
+        const cartItem = {
+          itemId: item.itemId,
+          quantity: item.quantity
+        };
+  
+        cartItems.push(cartItem);
+        restaurant.orders.push({
+          orderId: order._id,
+          orderStatus: 'Placed',
+          cartItems: cartItems
+        });
+      }
+  
+      // Save the order, user, and restaurant to the database
+      await order.save();
+      await user.save();
+      await restaurant.save();
+  
+      res.json({ message: 'Order placed successfully' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+  
+    
+//add to cart 
+
+// Define API route for adding items to the cart
+// Define API route for adding items to the cart
+app.post('/cart/add', async (req, res) => {
+    const { userId, restaurantId, itemId, quantity } = req.body;
+  
+    try {
+      // Find the user and validate if the user exists
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+  
+      // Find the restaurant and validate if the restaurant exists
+      const restaurant = await Restaurant.findById(restaurantId);
+      if (!restaurant) {
+        return res.status(404).json({ error: 'Restaurant not found' });
+      }
+  
+      // Find the item in the restaurant's menu and validate if the item exists
+      const item = restaurant.menu.id(itemId);
+      if (!item) {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+  
+      // Create a new cart item
+      const cartItem = {
+        itemId: item._id,
+        quantity
+      };
+  
+      // Add the cart item to the user's cart
+      user.cart.push(cartItem);
+  
+      // Save the user's cart to the database
+      await user.save();
+  
+      res.json({ message: 'Item added to cart successfully' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
+  
+  // Define API route for billing the items in the cart
+app.post('/cart/bill', async (req, res) => {
+    const { userId } = req.body;
+  
+    try {
+      // Find the user and validate if the user exists
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+  
+      // Calculate the total amount for the items in the cart
+      let totalAmount = 0;
+      for (const cartItem of user.cart) {
+        const restaurant = await Restaurant.findById(cartItem.restaurantId);
+        if (!restaurant) {
+          return res.status(404).json({ error: 'Restaurant not found' });
+        }
+  
+        const item = restaurant.menu.id(cartItem.itemId);
+        if (!item) {
+          return res.status(404).json({ error: 'Item not found' });
+        }
+  
+        totalAmount += item.price * cartItem.quantity;
+      }
+  
+      // Create a new order
+      const order = new Order({
+        userId,
+        items: user.cart,
+        totalAmount
+      });
+  
+      // Save the order to the database
+      await order.save();
+  
+      // Clear the user's cart
+      user.cart = [];
+  
+      // Save the user to the database
+      await user.save();
+  
+      res.json({ message: 'Order placed successfully' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
+  
+  // Define API route for retrieving items in the cart
+// Define API route for retrieving items in the cart
+app.get('/cart', async (req, res) => {
+    const { userId } = req.query;
+  
+    try {
+      // Find the user and validate if the user exists
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+  
+      // Retrieve the items in the user's cart
+      const cartItems = [];
+      for (const cartItem of user.cart) {
+        const restaurant = await Restaurant.findById(cartItem.restaurantId);
+        if (!restaurant) {
+          return res.status(404).json({ error: 'Restaurant not found' });
+        }
+  
+        const item = restaurant.menu.id(cartItem.itemId);
+        if (!item) {
+          return res.status(404).json({ error: 'Item not found' });
+        }
+  
+        const cartItemDetails = {
+          itemId: item._id,
+          itemName: item.itemName,
+          price: item.price,
+          quantity: cartItem.quantity
+        };
+  
+        cartItems.push(cartItemDetails);
+      }
+  
+      res.json({ cartItems });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
+  
+  // Define API route for updating an item in the cart
+// Define API route for updating an item in the cart
+app.put('/cart/update', async (req, res) => {
+    const { userId, itemId, quantity } = req.body;
+  
+    try {
+      // Find the user and validate if the user exists
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+  
+      // Find the cart item and update its quantity
+      const cartItem = user.cart.find((item) => item.itemId === itemId);
+      if (!cartItem) {
+        return res.status(404).json({ error: 'Item not found in the cart' });
+      }
+  
+      cartItem.quantity = quantity;
+  
+      // Save the user to the database
+      await user.save();
+  
+      res.json({ message: 'Cart item updated successfully' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+  
+
+  
+  // Define API route for deleting an item from the cart
+app.delete('/cart/delete', async (req, res) => {
+    const { userId, itemId } = req.body;
+  
+    try {
+      // Find the user and validate if the user exists
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+  
+      // Find the cart item and remove it from the cart
+      const cartItemIndex = user.cart.findIndex((item) => item.itemId === itemId);
+      if (cartItemIndex === -1) {
+        return res.status(404).json({ error: 'Item not found in the cart' });
+      }
+  
+      user.cart.splice(cartItemIndex, 1);
+  
+      // Save the user to the database
+      await user.save();
+  
+      res.json({ message: 'Item deleted successfully' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).
+      json({ error: 'Server error' });
+    }
+    });
+    
+    
+
+app.listen(port, () => {
+  console.log(`Server listening at http://localhost:${port}`);
+});

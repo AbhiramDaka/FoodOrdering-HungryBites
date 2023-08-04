@@ -1,0 +1,192 @@
+/* styles.css */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Navbar */
+.navbar {
+  background-color: #4CAF50;
+}
+
+.navbar-brand {
+  font-size: 24px;
+  color: #fff;
+}
+
+.navbar-toggler-icon {
+  background-color: #fff;
+}
+
+.nav-link {
+  color: #fff;
+  font-size: 18px;
+}
+
+.nav-link:hover {
+  color: #f9f9f9;
+}
+
+/* Hero Section */
+.hero {
+  text-align: center;
+  background-color: #fff;
+}
+
+.hero h1 {
+  font-size: 36px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.hero p {
+  font-size: 18px;
+  margin-bottom: 40px;
+}
+
+.hero .btn-primary {
+  font-size: 18px;
+  background-color: #4CAF50;
+  border-color: #4CAF50;
+}
+
+.hero .btn-primary:hover {
+  background-color: #3b9430;
+}
+
+/* About Section */
+.about {
+  background-color: #fff;
+  text-align: center;
+}
+
+.about h2 {
+  font-size: 30px;
+  font-weight: bold;
+  margin-bottom: 40px;
+}
+
+.about p {
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+/* Menu Section */
+.menu {
+  padding: 100px 0;
+  background-color: #fff;
+  text-align: center;
+}
+
+.menu h2 {
+  font-size: 30px;
+  font-weight: bold;
+  margin-bottom: 40px;
+}
+
+.menu .card {
+  margin-bottom: 30px;
+  border: none;
+}
+
+.menu .card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.menu .card .card-body {
+  padding: 10px;
+}
+
+.menu .card .btn-primary {
+  font-size: 18px;
+  background-color: #4CAF50;
+  border-color: #4CAF50;
+}
+
+.menu .card .btn-primary:hover {
+  background-color: #3b9430;
+}
+
+/* Contact Section */
+.contact {
+  padding: 100px 0;
+  background-color: #fff;
+}
+
+.contact h2 {
+  font-size: 30px;
+  font-weight: bold;
+  margin-bottom: 40px;
+}
+
+.contact form {
+  margin-bottom: 40px;
+}
+
+.contact .form-group label {
+  font-size: 18px;
+}
+
+.contact .form-control {
+  font-size: 16px;
+}
+
+.contact .btn-primary {
+  font-size: 18px;
+  background-color: #4CAF50;
+  border-color: #4CAF50;
+}
+
+.contact .btn-primary:hover {
+  background-color: #3b9430;
+}
+
+/* Footer */
+.footer {
+  background-color: #333;
+  padding: 20px 0;
+  text-align: center;
+}
+
+.footer p {
+  margin: 0;
+  color: #fff;
+  font-size: 14px;
+}
+
+.footer p::before {
+  content: "\00a9 ";
+}
+
+.footer p::after {
+  content: " Restaurant App. All rights reserved.";
+}
+
+/* Media Queries for Responsiveness */
+@media (max-width: 576px) {
+  .navbar-brand {
+    font-size: 20px;
+  }
+  .nav-link {
+    font-size: 16px;
+  }
+  .btn {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  .navbar-brand {
+    font-size: 18px;
+  }
+  .nav-link {
+    font-size: 14px;
+  }
+  .btn {
+    font-size: 12px;
+  }
+}
